@@ -1,0 +1,245 @@
+﻿<#@ output extension=".hpp" #>
+<#@ include file="T4\MessageSerializer.ttinclude" #>
+// ----------------------------------------------------------------------------------------------
+#include "noncopyable.hpp"
+// ----------------------------------------------------------------------------------------------
+#undef max
+#undef min
+// ----------------------------------------------------------------------------------------------
+#include <string>
+#include <vector>
+#include <xutility>
+// ----------------------------------------------------------------------------------------------
+#include "opt.hpp"
+// ----------------------------------------------------------------------------------------------
+
+<#
+    foreach (var typeDef in model)
+    {    
+#>
+<#
+    if (!typeDef.IsValueType)
+    {
+#>
+        // When this is called the implementor is guaranteed that <#=typeDef.MinSizeOf#> bytes are available.
+        // For other limits it's up to the implementor making sure the buffer is not overrun 
+        extern bool message_unpacker__unpack (
+                wchar_t const *             name
+            ,   unsigned __int8 const *     bytes
+            ,   __int32                     size   
+            ,   __int32 &                   current   
+            ,   <#=typeDef.ToCppType ()#> & value
+            );
+<#
+    }
+#>
+<#
+    }
+#>
+    struct message_unserializer : noncopyable
+    {
+        
+        enum class unpack_header_result
+        {
+            success_has_value               ,
+            success_is_null                 ,
+            message_not_of_expected_type    ,
+            message_too_short               ,
+        };
+
+        enum SerializedType : unsigned __int8
+        {
+<#
+    var typeIter = -1;
+    foreach (var typeDef in model)
+    {    
+        ++typeIter;
+#>
+            <#=typeDef.Name#> = <#=typeIter + 1#>,
+<#
+    }
+#>
+            IsNull = 0x80,
+        };
+
+        message_unserializer (
+                __int32 size_of_message
+            ,   unsigned __int8 const * bytes
+            )  throw ()
+            :   m__size (std::max (size_of_message, 0))
+            ,   m__bytes (bytes)
+            ,   m__current (0)
+        {
+        }
+
+        __int32 get_remaining () const throw ()
+        {
+            return std::max (0, m__size - m__current);
+        }      
+         
+<#
+    foreach (var typeDef in model)
+    {    
+#>
+<#
+    if (typeDef.IsValueType)
+    {
+#>
+        bool unpack (wchar_t const * name, opt<<#=typeDef.ToCppType ()#>> & value) throw ()
+        {
+            <#=typeDef.ToCppType ()#> non_null_value;
+            auto result = unpack_impl (name, non_null_value);
+            switch (result)
+            {
+                case unpack_header_result::success_has_value:
+                    value = non_null_value;
+                    return true;
+                case unpack_header_result::success_is_null:
+                    value = opt<<#=typeDef.ToCppType ()#>> ();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        bool unpack (wchar_t const * name, <#=typeDef.ToCppType ()#> & value) throw ()
+        {
+            auto result = unpack_impl (name, value);
+            switch (result)
+            {
+                case unpack_header_result::success_has_value:
+                case unpack_header_result::success_is_null:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        unpack_header_result unpack_impl (wchar_t const * name, <#=typeDef.ToCppType ()#> & value) throw ()
+        {
+            static_assert (sizeof (<#=typeDef.ToCppType ()#>) == <#=typeDef.SizeOf#>, "sizeof value for <#=typeDef.ToCppType ()#> must be <#=typeDef.SizeOf#>");
+
+            auto saved_position = m__current;
+
+            auto result = unpack_header (name, SerializedType::<#=typeDef.Name#>, <#=typeDef.SizeOf#>);
+            
+            switch (result)
+            {
+                case unpack_header_result::success_has_value:
+                    {
+                        auto ptr = reinterpret_cast<unsigned __int8*> (&value);
+<#
+    for (var iter = 0; iter < typeDef.SizeOf; ++iter)
+    {
+#>
+                        ptr[<#=iter#>] = m__bytes[m__current++];
+<#
+    }
+#>
+                    }
+                    break;
+                case unpack_header_result::success_is_null:
+                    value =  <#=typeDef.ToCppType ()#> ();
+                    break;
+                default:
+                    // TODO: Log
+                    m__current = saved_position;
+                    break;
+            }
+
+            return result;
+        }
+<#
+    }
+#>
+
+
+<#
+    if (!typeDef.IsValueType)
+    {
+#>
+        bool unpack (wchar_t const * name, <#=typeDef.ToCppType ()#> & value)
+        {
+            auto saved_position = m__current;
+
+            auto unpack_header_result = unpack_header (name, SerializedType::<#=typeDef.Name#>, <#=typeDef.MinSizeOf#>);
+            
+            switch (unpack_header_result)
+            {
+                case unpack_header_result::success_has_value:
+                    if (message_unpacker__unpack (
+                            name
+                        ,   m__bytes
+                        ,   m__size
+                        ,   m__current   
+                        ,   value
+                        ))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        // TODO: Log
+                        m__current = saved_position;
+                        return false;
+                    }
+                case unpack_header_result::success_is_null:
+                    value =  <#=typeDef.ToCppType ()#> ();
+                    return true;
+                default:
+                    // TODO: Log
+                    m__current = saved_position;
+                    return false;
+            }
+        }
+<#
+    }
+#>
+
+<#
+    }
+#>
+    private:
+        unpack_header_result unpack_header (
+                wchar_t const * name
+            ,   SerializedType expected_type
+            ,   __int32 expected_size
+            )
+        {
+            UNREFERENCED_PARAMETER (name);
+
+            if (get_remaining () < 1)
+            {
+                return unpack_header_result::message_too_short;
+            }
+
+            auto type = static_cast<SerializedType> (m__bytes[m__current++]);
+
+            auto non_null_type = static_cast<SerializedType> ((type & ~SerializedType::IsNull)); 
+
+            if (non_null_type != expected_type)
+            {
+                return unpack_header_result::message_not_of_expected_type;
+            }
+
+            if (type == non_null_type && get_remaining () < expected_size)
+            {
+                return unpack_header_result::message_too_short;
+            }
+
+            if (type == non_null_type)
+            {
+                return unpack_header_result::success_has_value;
+            }
+            else
+            {
+                return unpack_header_result::success_is_null;
+            }
+        }
+
+
+        __int32                     m__size     ;
+        unsigned __int8 const *     m__bytes    ;
+        __int32                     m__current  ;
+    };
+// ----------------------------------------------------------------------------------------------

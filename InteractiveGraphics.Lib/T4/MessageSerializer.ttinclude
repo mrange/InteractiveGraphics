@@ -1,0 +1,82 @@
+﻿<#@ include file="T4\Header.ttinclude" #>
+
+<#
+    var model = new []
+        {
+            V ("Int32"  , 4 ),
+            V ("Single" , 4 ),
+            R ("String" , 2 ),
+            V ("Boolean", 1 ),
+            V ("Byte"   , 1 ),
+            R ("Bytes"  , 4 ),
+        };
+#>
+
+
+<#+
+
+    class TypeDefinition : BaseEntity<Root>
+    {
+        public readonly string      Name        ;
+        public readonly int         SizeOf      ;
+        public readonly int         MinSizeOf   ;
+
+        public TypeDefinition (string name, int sizeOf, int minSizeOf)
+        {
+            Name        = name ?? S_NoName  ;
+            SizeOf      = sizeOf            ;
+            MinSizeOf   = minSizeOf         ;
+        } 
+
+        public bool IsValueType 
+        {
+            get 
+            {
+                return SizeOf > 0;
+            }
+        }
+
+        public string ToCSharpType ()
+        {
+            switch (Name)
+            {
+                case "Bytes":
+                    return "Byte[]";
+                default:
+                    return Name;
+            }
+        }
+
+        public string ToCppType ()
+        {
+            switch (Name)
+            {
+                case "Int32":
+                    return "__int32";
+                case "Single":
+                    return "float";
+                case "String":
+                    return "std::wstring";
+                case "Boolean":
+                    return "bool";
+                case "Byte":
+                    return "unsigned __int8";
+                case "Bytes":
+                    return "std::vector<unsigned __int8>";
+                default:
+                    return Name;
+            }
+        }
+
+    }
+
+    static TypeDefinition R (string name, int minSizeOf)
+    {
+        return new TypeDefinition (name, sizeOf:0, minSizeOf:minSizeOf);
+    }
+
+    static TypeDefinition V (string name, int sizeOf)
+    {
+        return new TypeDefinition (name, sizeOf:sizeOf, minSizeOf:sizeOf);
+    }
+#>

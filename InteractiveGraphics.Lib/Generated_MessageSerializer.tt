@@ -1,0 +1,109 @@
+﻿<#@ output extension=".cs" #>
+<#@ include file="T4\MessageSerializer.ttinclude" #>
+
+namespace InteractiveGraphics.Lib
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+
+    sealed partial class MessageSerializer 
+    {
+        [Flags]
+        enum SerializedType : byte
+        {
+<#
+    var typeIter = -1;
+    foreach (var typeDef in model)
+    {    
+        ++typeIter;
+#>
+            <#=typeDef.Name#> = <#=typeIter + 1#>,
+<#
+    }
+#>
+            IsNull = 0x80,
+        }
+
+        readonly List<Byte> m_bytes = new List<Byte> (32);
+
+        public Byte[] ToBytes ()
+        {
+            return m_bytes.ToArray ();
+        }
+
+<#
+    foreach (var typeDef in model)
+    {    
+#>
+<#
+    if (typeDef.IsValueType)
+    {
+#>
+        public void Add (string name, <#=typeDef.ToCSharpType ()#>? value)
+        {
+            if (value != null)
+            {
+                Add (name, value.Value);
+            }
+            else
+            {
+                m_bytes.Add ((Byte)(SerializedType.IsNull | SerializedType.<#=typeDef.Name#>));
+            }
+        }
+
+        public void Add (string name, <#=typeDef.ToCSharpType ()#> value)
+        {
+            m_bytes.Add ((Byte)SerializedType.<#=typeDef.Name#>);
+            NoHeader_Add (name, value);
+        }
+
+        void NoHeader_Add (string name, <#=typeDef.ToCSharpType ()#> value)
+        {
+            Debug.Assert (sizeof (<#=typeDef.ToCSharpType ()#>) == <#=typeDef.SizeOf#>);
+            unsafe
+            {         
+                var ptr = (Byte*)&value;
+<#
+    for (var iter = 0; iter < typeDef.SizeOf; ++iter)
+    {
+#>
+                m_bytes.Add (ptr[<#=iter#>]);
+<#
+    }
+#>
+            }
+
+        }
+
+<#
+    }
+#>
+<#
+    if (!typeDef.IsValueType)
+    {
+#>
+        partial void Partial_Add (string name, <#=typeDef.ToCSharpType ()#> value);
+
+        public void Add (string name, <#=typeDef.ToCSharpType ()#> value)
+        {
+            if (value != null)
+            {
+                m_bytes.Add ((Byte)(SerializedType.<#=typeDef.Name#>));
+                Partial_Add (name, value);
+            }
+            else
+            {
+                m_bytes.Add ((Byte)(SerializedType.IsNull | SerializedType.<#=typeDef.Name#>));
+            }
+        }
+<#
+    }
+#>
+<#
+    }
+#>
+       
+    }
+
+}

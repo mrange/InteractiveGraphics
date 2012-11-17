@@ -1,0 +1,291 @@
+﻿<#@ output extension=".cs" #>
+<#@ include file="T4\API.ttinclude"  #>
+
+// ReSharper disable ConvertToAutoProperty
+// ReSharper disable InconsistentNaming
+// ReSharper disable RedundantDefaultFieldInitializer
+
+namespace InteractiveGraphics.Lib
+{
+    using System;
+<#
+    var methodIndex = 0;
+    var parameterIndex = 0;
+#>
+
+    enum MessageId : byte
+    {
+<#
+    methodIndex = -1;
+    foreach (var methodDef in model.Where (m => !m.IsSuppressingMessage))
+    {
+        ++methodIndex;
+#>
+        <#=methodDef.Verb#>_<#=methodDef.Noun#> = <#=methodIndex + 1#>,
+<#
+    }
+#>
+    }
+
+    public sealed class CommandDescription
+    {
+        public string Verb;
+        public string Noun;
+        public string ShortDescription;
+    }
+
+    sealed partial class Session
+    {
+        partial void Partial_OnException (string methodName, Exception exc);
+
+        void OnException (string methodName, Exception exc)
+        {
+            Partial_OnException (methodName, exc);
+        }
+
+
+        public static CommandDescription[] GetCommandDescriptions ()
+        {
+            return new []
+                {
+<#
+    methodIndex = -1;
+    foreach (var methodDef in model)
+    {
+        ++methodIndex;
+#>
+                    new CommandDescription
+                        {
+                            Verb                = "<#=methodDef.Verb#>",
+                            Noun                = "<#=methodDef.Noun#>",
+                            ShortDescription    = Constants.CmdLet.ShortDescription.<#=methodDef.Verb#>_<#=methodDef.Noun#>,
+                        },
+<#
+    }
+#>                    
+                };
+        }
+<#
+    methodIndex = -1;
+    foreach (var methodDef in model)
+    {
+        ++methodIndex;
+#>
+        // --------------------------------------------------------------------
+        //  <#=methodDef.Verb#>_<#=methodDef.Noun#> method
+        // --------------------------------------------------------------------
+        public void <#=methodDef.Verb#>_<#=methodDef.Noun#> (
+<#
+    parameterIndex = -1;
+    foreach (var parameterDef in methodDef)
+    {
+        ++parameterIndex;
+#>
+            <#=parameterIndex == 0 ? "    " : ",   "#><#=parameterDef.Type#> <#=LowerCaseFirst (parameterDef.Name)#> <#=parameterDef.DefaultValue.Length > 0 ? " = " + parameterDef.DefaultValue : ""#>
+<#
+    }
+#>
+            )
+        {
+<#
+    if (methodDef.IsSuppressingMessage)
+    {
+#>
+            try
+            {
+                Partial_<#=methodDef.Verb#>_<#=methodDef.Noun#> (
+<#
+    parameterIndex = -1;
+    foreach (var parameterDef in methodDef)
+    {
+        ++parameterIndex;
+#>
+                    <#=parameterIndex == 0 ? "    " : ",   "#><#=LowerCaseFirst (parameterDef.Name)#> 
+<#
+    }
+#>
+                    );
+            }
+            catch (Exception exc)
+            {
+                OnException (
+                        "<#=methodDef.Verb#>_<#=methodDef.Noun#>"
+                    ,   exc
+                    );
+            }
+<#
+    }
+#>
+
+<#
+    if (!methodDef.IsSuppressingMessage)
+    {
+#>
+            var messageSerializer = new MessageSerializer ();
+            messageSerializer.Add ("MessageId", (byte)MessageId.<#=methodDef.Verb#>_<#=methodDef.Noun#>);
+<#
+    parameterIndex = -1;
+    foreach (var parameterDef in methodDef)
+    {
+        ++parameterIndex;
+#>
+            messageSerializer.Add ("<#=parameterDef.Name#>", <#=LowerCaseFirst (parameterDef.Name)#>);
+<#
+    }
+#>
+            SendMessage (messageSerializer);
+<#
+    }
+#>
+        }
+        // --------------------------------------------------------------------
+<#
+    if (methodDef.IsSuppressingMessage)
+    {
+#>
+        partial void Partial_<#=methodDef.Verb#>_<#=methodDef.Noun#> (
+<#
+    parameterIndex = -1;
+    foreach (var parameterDef in methodDef)
+    {
+        ++parameterIndex;
+#>
+            <#=parameterIndex == 0 ? "    " : ",   "#><#=parameterDef.Type#> <#=LowerCaseFirst (parameterDef.Name)#>
+<#
+    }
+#>
+            );
+<#
+    }
+#>
+        // --------------------------------------------------------------------
+
+<#
+    }
+#>
+    }
+}
+
+#if !SUPPRESS_POWERSHELL_API
+
+namespace InteractiveGraphics.Lib
+{
+    using System.Management.Automation;
+<#
+    methodIndex = -1;
+    foreach (var methodDef in model.Where (m => !m.IsSuppressingPowerShell))
+    {
+        ++methodIndex;
+#>
+    [Cmdlet ("<#=methodDef.Verb#>", "IG<#=methodDef.Noun#>")]
+    public sealed class <#=methodDef.Verb#>_IG<#=methodDef.Noun#> : Cmdlet
+    {
+<#
+    parameterIndex = -1;
+    foreach (var parameterDef in methodDef)
+    {
+        ++parameterIndex;
+#>
+
+        <#=parameterDef.Type#> m_<#=LowerCaseFirst (parameterDef.Name)#><#=parameterDef.DefaultValue.Length > 0 ? " = " + parameterDef.DefaultValue : ""#>;
+        [Parameter (
+                Mandatory = <#=parameterDef.DefaultValue.Length > 0 ? "false" : "true"#>
+<#
+    if (parameterIndex == 0 && parameterDef.Name.StartsWith ("NameOf"))
+    {
+#>
+            ,   Position = 0
+<#
+    }
+#>
+            )]
+        public <#=parameterDef.Type#> <#=parameterDef.Name#> 
+        { 
+            get { return m_<#=LowerCaseFirst (parameterDef.Name)#>; } 
+            set { m_<#=LowerCaseFirst (parameterDef.Name)#> = value;}
+        }
+
+<#
+    }
+#>
+
+        protected override void EndProcessing ()
+        {
+            var session = SessionHolder.Session;
+            if (session != null)
+            {
+                session.<#=methodDef.Verb#>_<#=methodDef.Noun#> (
+<#
+    parameterIndex = -1;
+    foreach (var parameterDef in methodDef)
+    {
+        ++parameterIndex;
+#>
+                    <#=parameterIndex == 0 ? "    " : ",   "#><#=parameterDef.Name#>
+<#
+    }
+#>
+                    );
+            }
+        }
+    }
+<#
+    }
+#>
+}
+
+#endif
+
+
+#if !SUPPRESS_SMALLBASIC_API
+
+namespace InteractiveGraphics.Lib
+{
+    using Microsoft.SmallBasic.Library;
+
+    public static partial class FastGraphics
+    {
+<#
+    methodIndex = -1;
+    foreach (var methodDef in model.Where (m => !m.IsSuppressingSmallBasic))
+    {
+        ++methodIndex;
+#>
+        public static Primitive <#=methodDef.Verb#>_<#=methodDef.Noun#> (
+<#
+    parameterIndex = -1;
+    foreach (var parameterDef in methodDef)
+    {
+        ++parameterIndex;
+#>
+            <#=parameterIndex == 0 ? "    " : ",   "#>Primitive <#=LowerCaseFirst (parameterDef.Name)#>
+<#
+    }
+#>
+            )
+        {
+            if (Session != null)
+            {
+                Session.<#=methodDef.Verb#>_<#=methodDef.Noun#> (
+<#
+    parameterIndex = -1;
+    foreach (var parameterDef in methodDef)
+    {
+        ++parameterIndex;
+#>
+                    <#=parameterIndex == 0 ? "    " : ",   "#><#=LowerCaseFirst (parameterDef.Name)#>
+<#
+    }
+#>
+                    );
+            }
+
+            return true;
+        }
+
+<#
+    }
+#>
+    }
+}
+#endif

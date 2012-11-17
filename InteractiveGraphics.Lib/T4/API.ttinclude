@@ -1,0 +1,313 @@
+﻿<#@ include file="T4\Header.ttinclude"  #>
+
+
+<#
+
+    var model = new []
+    {
+        new MethodDefinition ("Set", "Window")
+        {
+            P ("int?"   , "X"           , "null"),
+            P ("int?"   , "Y"           , "null"),
+            P ("int?"   , "Width"       , "null"),
+            P ("int?"   , "Height"      , "null"),
+            P ("bool"   , "ClientSize"  , "true"),
+            P ("bool?"  , "ShowWindow"  , "null"),
+            P ("bool?"  , "ShowFPS"     , "null"),
+            P ("string" , "Color"       , "null"),
+            P ("string" , "Title"       , "null"),
+        },
+        new MethodDefinition ("Wait", "StateIsPresented")
+        {
+        },
+        new MethodDefinition ("Clear", "State")
+        {
+        },
+        new MethodDefinition ("Remove", "Object")
+        {
+            P ("string" , "NameOfObject" , "Constants.Empty" ),
+        },
+        new MethodDefinition ("Remove", "Resource")
+        {
+            P ("string" , "NameOfResource" , "Constants.Empty" ),
+        },
+        new MethodDefinition ("New", "SolidBrush")
+        {
+            P ("string" , "NameOfBrush" , "Constants.Empty" ),
+            P ("string" , "Color"       , "Constants.White" ),
+        },
+        new MethodDefinition ("New", "LinearGradientBrush")
+        {
+            P ("string" , "NameOfBrush"         , "Constants.Empty"     ),
+            P ("bool"   , "RelativeCoordinates" , "true"                ),
+            P ("string" , "Gamma"               , "Constants.Gamma"     ),
+            P ("string" , "ExtendMode"          , "Constants.ExtendMode"),
+            P ("float"  , "StartX"              , "0"                   ),
+            P ("float"  , "StartY"              , "0"                   ),
+            P ("float"  , "EndX"                , "0"                   ),
+            P ("float"  , "EndY"                , "1"                   ),
+        },
+        new MethodDefinition ("New", "RadialGradientBrush")
+        {
+            P ("string" , "NameOfBrush"         , "Constants.Empty"     ),
+            P ("bool"   , "RelativeCoordinates" , "true"                ),
+            P ("string" , "Gamma"               , "Constants.Gamma"     ),
+            P ("string" , "ExtendMode"          , "Constants.ExtendMode"),
+            P ("float"  , "CenterX"             , "0.5F"                ),
+            P ("float"  , "CenterY"             , "0.5F"                ),
+            P ("float"  , "OffsetX"             , "0"                   ),
+            P ("float"  , "OffsetY"             , "0"                   ),
+            P ("float"  , "RadiusX"             , "0.5F"                ),
+            P ("float"  , "RadiusY"             , "0.5F"                ),
+
+        },
+        new MethodDefinition ("Add", "GradientStop")
+        {
+            P ("string" , "NameOfBrush" , "Constants.Empty"         ),
+            P ("float"  , "Offset"      , "0"                       ),
+            P ("string" , "Color"       , "Constants.White"         ),
+        },
+        new MethodDefinition ("Clear", "GradientStops")
+        {
+            P ("string" , "NameOfBrush" , "Constants.Empty"         ),
+        },
+        new MethodDefinition ("New", "BitmapResourceFromBytes", MethodFlags.SuppressSmallBasic)
+        {
+            P ("string" , "NameOfBitmapResource"    , "Constants.Empty"     ),
+            P ("byte[]" , "Bytes"                   , "null"                ),
+            P ("int"    , "UseFrame"                , "0"                   ),
+        },
+        new MethodDefinition ("New", "BitmapResourceFromUrl", MethodFlags.SuppressMessage)
+        {
+            P ("string" , "NameOfBitmapResource"    , "Constants.Empty"     ),
+            P ("string" , "ImageUrl"                , "Constants.ImageUrl"  ),
+            P ("bool"   , "LoadAsync"               , "false"               ),
+            P ("int"    , "UseFrame"                , "0"                   ),
+        },
+        new MethodDefinition ("New", "BitmapResourceFromFileName", MethodFlags.SuppressMessage)
+        {
+            P ("string" , "NameOfBitmapResource"    , "Constants.Empty"         ),
+            P ("string" , "ImageFileName"           , "Constants.ImageFileName" ),
+            P ("int"    , "UseFrame"                , "0"                       ),
+        },
+        new MethodDefinition ("New", "FontResource")
+        {
+            P ("string" , "NameOfFontResource"      , "Constants.Empty"             ),
+            P ("string" , "FontFamily"              , "Constants.DefaultFont"       ),
+            P ("float"  , "FontSize"                , "Constants.DefaultFontSize"   ),
+        },
+        new MethodDefinition ("Set", "Object")
+        {
+            P ("string" , "NameOfObject"    , "Constants.Empty"             ),
+            P ("float?" , "X"               , "null"                        ),
+            P ("float?" , "Y"               , "null"                        ),
+            P ("float?" , "Width"           , "null"                        ),
+            P ("float?" , "Height"          , "null"                        ),
+            P ("float?" , "Opacity"         , "null"                        ),
+        },
+        new MethodDefinition ("New", "Line")
+        {
+            P ("string" , "NameOfLine"          , "Constants.Empty"         ),
+            P ("string" , "NameOfBrush"         , "Constants.Empty"         ),
+            P ("float"  , "StartX"              , "Constants.StartX"        ),
+            P ("float"  , "StartY"              , "Constants.StartY"        ),
+            P ("float"  , "EndX"                , "Constants.EndX"          ),
+            P ("float"  , "EndY"                , "Constants.EndY"          ),
+            P ("float"  , "Opacity"             , "Constants.Opacity"       ),
+            P ("float"  , "StrokeWidth"         , "Constants.StrokeWidth"   ),
+        },
+        new MethodDefinition ("New", "Ellipse")
+        {
+            P ("string" , "NameOfEllipse"       , "Constants.Empty"         ),
+            P ("string" , "NameOfBrush"         , "Constants.Empty"         ),
+            P ("float"  , "X"                   , "Constants.X"             ),
+            P ("float"  , "Y"                   , "Constants.Y"             ),
+            P ("float"  , "Width"               , "Constants.Width"         ),
+            P ("float"  , "Height"              , "Constants.Height"        ),
+            P ("float"  , "Opacity"             , "Constants.Opacity"       ),
+            P ("float"  , "StrokeWidth"         , "Constants.StrokeWidth"   ),
+        },
+        new MethodDefinition ("New", "Rectangle")
+        {
+            P ("string" , "NameOfRectangle"     , "Constants.Empty"         ),
+            P ("string" , "NameOfBrush"         , "Constants.Empty"         ),
+            P ("float"  , "X"                   , "Constants.X"             ),
+            P ("float"  , "Y"                   , "Constants.Y"             ),
+            P ("float"  , "Width"               , "Constants.Width"         ),
+            P ("float"  , "Height"              , "Constants.Height"        ),
+            P ("float"  , "Opacity"             , "Constants.Opacity"       ),
+            P ("float"  , "StrokeWidth"         , "Constants.StrokeWidth"   ),
+        },
+        new MethodDefinition ("New", "RoundedRectangle")
+        {
+            P ("string" , "NameOfRectangle"     , "Constants.Empty"         ),
+            P ("string" , "NameOfBrush"         , "Constants.Empty"         ),
+            P ("float"  , "X"                   , "Constants.X"             ),
+            P ("float"  , "Y"                   , "Constants.Y"             ),
+            P ("float"  , "Width"               , "Constants.Width"         ),
+            P ("float"  , "Height"              , "Constants.Height"        ),
+            P ("float"  , "Opacity"             , "Constants.Opacity"       ),
+            P ("float"  , "RadiusX"             , "Constants.RadiusX"       ),
+            P ("float"  , "RadiusY"             , "Constants.RadiusY"       ),
+            P ("float"  , "StrokeWidth"         , "Constants.StrokeWidth"   ),
+        },
+        new MethodDefinition ("New", "FilledEllipse")
+        {
+            P ("string" , "NameOfEllipse"       , "Constants.Empty"         ),
+            P ("string" , "NameOfBrush"         , "Constants.Empty"         ),
+            P ("float"  , "X"                   , "Constants.X"             ),
+            P ("float"  , "Y"                   , "Constants.Y"             ),
+            P ("float"  , "Width"               , "Constants.Width"         ),
+            P ("float"  , "Height"              , "Constants.Height"        ),
+            P ("float"  , "Opacity"             , "Constants.Opacity"       ),
+        },
+        new MethodDefinition ("New", "FilledRectangle")
+        {
+            P ("string" , "NameOfRectangle"     , "Constants.Empty"         ),
+            P ("string" , "NameOfBrush"         , "Constants.Empty"         ),
+            P ("float"  , "X"                   , "Constants.X"             ),
+            P ("float"  , "Y"                   , "Constants.Y"             ),
+            P ("float"  , "Width"               , "Constants.Width"         ),
+            P ("float"  , "Height"              , "Constants.Height"        ),
+            P ("float"  , "Opacity"             , "Constants.Opacity"       ),
+        },
+        new MethodDefinition ("New", "FilledRoundedRectangle")
+        {
+            P ("string" , "NameOfRectangle"     , "Constants.Empty"         ),
+            P ("string" , "NameOfBrush"         , "Constants.Empty"         ),
+            P ("float"  , "X"                   , "Constants.X"             ),
+            P ("float"  , "Y"                   , "Constants.Y"             ),
+            P ("float"  , "Width"               , "Constants.Width"         ),
+            P ("float"  , "Height"              , "Constants.Height"        ),
+            P ("float"  , "Opacity"             , "Constants.Opacity"       ),
+            P ("float"  , "RadiusX"             , "Constants.RadiusX"       ),
+            P ("float"  , "RadiusY"             , "Constants.RadiusY"       ),
+        },
+        new MethodDefinition ("New", "Bitmap")
+        {
+            P ("string" , "NameOfBitmap"        , "Constants.Empty"         ),
+            P ("string" , "NameOfBitmapResource", "Constants.Empty"         ),
+            P ("float"  , "X"                   , "Constants.X"             ),
+            P ("float"  , "Y"                   , "Constants.Y"             ),
+            P ("float?" , "Width"               , "null"                    ),
+            P ("float?" , "Height"              , "null"                    ),
+            P ("float"  , "Opacity"             , "Constants.Opacity"       ),
+        },
+        new MethodDefinition ("New", "Text")
+        {
+            P ("string" , "NameOfText"          , "Constants.Empty"         ),
+            P ("string" , "NameOfBrush"         , "Constants.Empty"         ),
+            P ("string" , "NameOfFontResource"  , "Constants.Empty"         ),
+            P ("string" , "Text"                , "Constants.DefaultText"   ),
+            P ("float"  , "X"                   , "Constants.X"             ),
+            P ("float"  , "Y"                   , "Constants.Y"             ),
+            P ("float"  , "Width"               , "Constants.Width"         ),
+            P ("float"  , "Height"              , "Constants.Height"        ),
+            P ("float"  , "Opacity"             , "Constants.Opacity"       ),
+        },
+        new MethodDefinition ("Clear", "Transform")
+        {
+            P ("string" , "NameOfTransform"     , "Constants.Empty"         ),
+        },
+        new MethodDefinition ("New", "RotateTransform")
+        {
+            P ("string" , "NameOfTransform"     , "Constants.Empty"         ),
+            P ("float"  , "Angle"               , "Constants.Angle"         ),
+            P ("float?" , "CenterX"             , "null"                    ),
+            P ("float?" , "CenterY"             , "null"                    ),
+        },
+        new MethodDefinition ("New", "TranslateTransform")
+        {
+            P ("string" , "NameOfTransform"     , "Constants.Empty"         ),
+            P ("float"  , "X"                   , "Constants.X"             ),
+            P ("float"  , "Y"                   , "Constants.Y"             ),
+        },
+        new MethodDefinition ("New", "ScaleTransform")
+        {
+            P ("string" , "NameOfTransform"     , "Constants.Empty"         ),
+            P ("float"  , "ScaleX"              , "Constants.ScaleX"        ),
+            P ("float"  , "ScaleY"              , "Constants.ScaleY"        ),
+            P ("float?" , "CenterX"             , "null"                    ),
+            P ("float?" , "CenterY"             , "null"                    ),
+        },
+        new MethodDefinition ("New", "SkewTransform")
+        {
+            P ("string" , "NameOfTransform"     , "Constants.Empty"         ),
+            P ("float"  , "AngleX"              , "Constants.AngleX"        ),
+            P ("float"  , "AngleY"              , "Constants.AngleY"        ),
+            P ("float?" , "CenterX"             , "null"                    ),
+            P ("float?" , "CenterY"             , "null"                    ),
+        },
+    };
+
+#>
+
+<#+
+
+    static string LowerCaseFirst (string value)
+    {
+        value = value ?? "";
+        if (value.Length == 0)
+        {
+            return value;
+        }
+        else
+        {
+            return char.ToLowerInvariant (value[0]) + value.Substring (1);
+        }
+    }
+
+    [Flags]
+    enum MethodFlags
+    {
+        None                = 0x0000    ,
+        SuppressPowerShell  = 0x0001    ,
+        SuppressSmallBasic  = 0x0002    ,
+        SuppressMessage     = 0x0004    ,
+    }
+
+    static bool IsOn (MethodFlags flags, MethodFlags test)
+    {
+        return (flags & test) == test;
+    }
+
+    class MethodDefinition : BaseContainer<Root, ParameterDefinition>
+    {
+        public readonly string      Verb    ;
+        public readonly string      Noun    ;
+        public readonly MethodFlags Flags   ;
+
+        public MethodDefinition (string verb, string noun, MethodFlags flags = MethodFlags.None)
+        {
+            Verb    = verb ?? S_NoName;
+            Noun    = noun ?? S_NoName;
+            Flags   = flags;
+        } 
+
+        public bool IsSuppressingPowerShell { get { return IsOn (Flags, MethodFlags.SuppressPowerShell  ); }}
+        public bool IsSuppressingSmallBasic { get { return IsOn (Flags, MethodFlags.SuppressSmallBasic  ); }}
+        public bool IsSuppressingMessage    { get { return IsOn (Flags, MethodFlags.SuppressMessage     ); }}
+
+    }
+
+    class ParameterDefinition : BaseEntity<MethodDefinition>
+    {
+        public readonly string Type;
+        public readonly string Name;
+        public readonly string DefaultValue;
+
+        public ParameterDefinition (string type, string name, string defaultValue)
+        {
+            Type        = type ?? S_NoType;
+            Name        = name ?? S_NoName;
+            DefaultValue= defaultValue ?? "";
+        } 
+    }
+
+    static ParameterDefinition P (string type, string name, string defaultValue = null)
+    {
+        return new ParameterDefinition (type, name, defaultValue);
+    }
+
+#>
+

@@ -1,0 +1,232 @@
+﻿<#@ output extension=".hpp" #>
+<#@ include file="T4\API.ttinclude"  #>
+
+#pragma once
+#pragma warning (push)
+#   pragma warning (disable:4100)
+
+namespace
+{
+
+<#
+    var methodIndex = 0;
+    var parameterIndex = 0;
+#>
+
+enum MessageId : byte
+{
+<#
+    methodIndex = -1;
+    foreach (var methodDef in model.Where (m => !m.IsSuppressingMessage))
+    {
+        ++methodIndex;
+#>
+    MessageId__<#=methodDef.Verb#>_<#=methodDef.Noun#> = <#=methodIndex + 1#>,
+<#
+    }
+#>
+};
+
+struct Message : noncopyable
+{
+    typedef std::tr1::shared_ptr<Message> ptr;
+    typedef std::auto_ptr<Message> aptr;
+
+    MessageId Id;
+
+    virtual ~Message () throw ()
+    {
+    }
+};
+
+
+<#
+    methodIndex = -1;
+    foreach (var methodDef in model.Where (m => !m.IsSuppressingMessage))
+    {
+        ++methodIndex;
+#>
+struct Message__<#=methodDef.Verb#>_<#=methodDef.Noun#> : Message
+{
+<#
+    parameterIndex = -1;
+    foreach (var parameterDef in methodDef)
+    {
+        ++parameterIndex;
+#>
+    <#=MapDataType (parameterDef.Type)#> <#=parameterDef.Name#>;
+<#
+    }
+#>
+};
+<#
+    }
+#>
+
+struct i__message_receiver
+{
+<#
+    methodIndex = -1;
+    foreach (var methodDef in model.Where (m => !m.IsSuppressingMessage))
+    {
+        ++methodIndex;
+#>
+    virtual void accept_message (
+            Message::aptr & message
+        ,   Message__<#=methodDef.Verb#>_<#=methodDef.Noun#> & specific_message    
+        ) = 0;
+
+<#
+    }
+#>
+
+};
+
+struct base__message_receiver : i__message_receiver
+{
+<#
+    methodIndex = -1;
+    foreach (var methodDef in model.Where (m => !m.IsSuppressingMessage))
+    {
+        ++methodIndex;
+#>
+    virtual void accept_message (
+            Message::aptr & message
+        ,   Message__<#=methodDef.Verb#>_<#=methodDef.Noun#> & specific_message    
+        ) override
+    {
+    }
+
+<#
+    }
+#>
+
+};
+
+void visit_message (
+        Message::aptr & message
+    ,   i__message_receiver & receiver
+    )
+{
+
+    switch (message->Id)
+    {
+<#
+    methodIndex = -1;
+    foreach (var methodDef in model.Where (m => !m.IsSuppressingMessage))
+    {
+        ++methodIndex;
+#>
+        case MessageId__<#=methodDef.Verb#>_<#=methodDef.Noun#>:
+            receiver.accept_message (
+                    message
+                ,   *static_cast<Message__<#=methodDef.Verb#>_<#=methodDef.Noun#>*>(message.get ())
+                );
+            break;
+<#
+    }
+#>
+    }
+}
+
+Message::aptr unpack_message (
+        __int32 size_of_message
+    ,   unsigned __int8 const * bytes
+    )
+{
+    if (size_of_message > 0 && bytes)
+    {
+        message_unserializer unpacker (size_of_message, bytes);
+        
+        unsigned __int8 messageId = 0;
+        if (!unpacker.unpack (L"MessageId", messageId))
+        {
+            // TODO: Log
+            return Message::aptr ();
+        }
+
+        switch (messageId)
+        {
+<#
+    methodIndex = -1;
+    foreach (var methodDef in model.Where (m => !m.IsSuppressingMessage))
+    {
+        ++methodIndex;
+#>
+        case MessageId__<#=methodDef.Verb#>_<#=methodDef.Noun#>:
+            {
+                std::auto_ptr<Message__<#=methodDef.Verb#>_<#=methodDef.Noun#>> message (new Message__<#=methodDef.Verb#>_<#=methodDef.Noun#> ());
+                message->Id = MessageId__<#=methodDef.Verb#>_<#=methodDef.Noun#>;
+                auto result = true
+<#
+    parameterIndex = -1;
+    foreach (var parameterDef in methodDef)
+    {
+        ++parameterIndex;
+#>
+                    &&  unpacker.unpack (L"<#=parameterDef.Name#>", message-><#=parameterDef.Name#>)
+<#
+    }
+#>
+                    ;
+                if (result)
+                {
+                    return Message::aptr (message.release ());
+                }
+                else
+                {
+                    // TODO: Log
+                }
+            }
+            break;
+<#
+    }
+#>
+        default:
+            // TODO: Log
+            break;
+        }
+
+    }
+    return Message::aptr ();
+}
+
+
+}
+#pragma warning (pop)
+
+<#+
+
+    static string MapDataType (string type)
+    {
+        type = type ?? "";
+        switch (type)
+        {
+            case "int":
+                return "int";
+            case "int?":
+                return "opt<int>";
+            case "string":
+                return "std::wstring";
+            case "float":
+                return "float";
+            case "float?":
+                return "opt<float>";
+            case "bool":
+                return "bool";
+            case "bool?":
+                return "opt<bool>";
+            case "byte":
+                return "unsigned __int8";
+            case "byte?":
+                return "opt<unsigned __int8>";
+            case "byte[]":
+                return "std::vector<unsigned __int8>";
+            default:
+                return "<UNKNOWN_TYPE_"+type+">";
+        }
+
+    }
+
+
+#>
